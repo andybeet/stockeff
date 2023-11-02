@@ -71,7 +71,7 @@ d <- rbind(comlandData,se) %>%
                 source = as.factor(source)) %>%
   dplyr::left_join(.,species,by = "NESPP3")
 
-top20 <- d %>% 
+top20land <- d %>% 
   dplyr::filter(source == "comlandr") %>%
   dplyr::group_by(NESPP3) %>% 
   dplyr::summarise(total = sum(landmt)) %>%
@@ -79,11 +79,29 @@ top20 <- d %>%
   head(28) %>%
   dplyr::pull(NESPP3)
 
-
 d %>% 
-  dplyr::filter(NESPP3 %in% top20) %>%
+  dplyr::filter(NESPP3 %in% top20land) %>%
   ggplot2::ggplot(.) +
   ggplot2::geom_line(ggplot2::aes(x=YEAR,y = landmt,color=source))+
-  ggplot2::facet_wrap(ggplot2::vars(SPPNM),scales="free_y")
+  ggplot2::facet_wrap(ggplot2::vars(SPPNM),scales="free_y") +
+  ggplot2::ggtitle("Landings")
 
-ggplot2::ggsave(here::here("plots/top20byspecies.png"),width=10,height=8)
+ggplot2::ggsave(here::here("plots/top20byspeciesLandings.png"),width=10,height=8)
+
+
+top20value <- d %>% 
+  dplyr::filter(source == "comlandr") %>%
+  dplyr::group_by(NESPP3) %>% 
+  dplyr::summarise(total = sum(value,na.rm=T)) %>%
+  dplyr::arrange(desc(total)) %>% 
+  head(28) %>%
+  dplyr::pull(NESPP3)
+
+d %>% 
+  dplyr::filter(NESPP3 %in% top20value) %>%
+  ggplot2::ggplot(.) +
+  ggplot2::geom_line(ggplot2::aes(x=YEAR,y = value,color=source))+
+  ggplot2::facet_wrap(ggplot2::vars(SPPNM),scales="free_y") +
+  ggplot2::ggtitle("Value")
+
+ggplot2::ggsave(here::here("plots/top20byspeciesValue.png"),width=10,height=8)

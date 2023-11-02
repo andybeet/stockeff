@@ -69,19 +69,36 @@ se <- se %>%
 d <- rbind(comlandData,se) %>% 
   dplyr::mutate(source = as.factor(source))
 
-top20 <- d %>% 
+top20landings <- d %>% 
   dplyr::filter(source == "comlandr") %>%
   dplyr::group_by(AREA) %>% 
-  dplyr::summarise(total = sum(landmt)) %>%
+  dplyr::summarise(total = sum(landmt,na.rm = T)) %>%
   dplyr::arrange(desc(total)) %>% 
   head(28) %>%
   dplyr::pull(AREA)
 
-
 d %>% 
-  dplyr::filter(AREA %in% top20) %>%
+  dplyr::filter(AREA %in% top20landings) %>%
   ggplot2::ggplot(.) +
   ggplot2::geom_line(ggplot2::aes(x=YEAR,y = landmt,color=source))+
-  ggplot2::facet_wrap(ggplot2::vars(AREA),scales="free_y")
+  ggplot2::facet_wrap(ggplot2::vars(AREA),scales="free_y") +
+  ggplot2::ggtitle("Landings by Area")
 
-ggplot2::ggsave(here::here("plots/top20byarea.png"),width=10,height=8)
+ggplot2::ggsave(here::here("plots/top20byareaLandings.png"),width=10,height=8)
+
+top20value <- d %>% 
+  dplyr::filter(source == "comlandr") %>%
+  dplyr::group_by(AREA) %>% 
+  dplyr::summarise(total = sum(value,na.rm=T)) %>%
+  dplyr::arrange(desc(total)) %>% 
+  head(28) %>%
+  dplyr::pull(AREA)
+
+d %>% 
+  dplyr::filter(AREA %in% top20value) %>%
+  ggplot2::ggplot(.) +
+  ggplot2::geom_line(ggplot2::aes(x=YEAR,y = value,color=source))+
+  ggplot2::facet_wrap(ggplot2::vars(AREA),scales="free_y") +
+  ggplot2::ggtitle("Value by Area")
+
+ggplot2::ggsave(here::here("plots/top20byareaValue.png"),width=10,height=8)
