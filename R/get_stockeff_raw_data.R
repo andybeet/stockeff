@@ -30,7 +30,7 @@
 #'
 #'@export
 
-get_stockeff_raw_data <- function(channelSole, filterByYear = NA, 
+get_stockeff_raw_data <- function(channel, filterByYear = NA, 
                                  filterByArea = NA, useLanded = T, removeParts = T){
   
   #If not specifying a year default to 1964 - 2019
@@ -49,7 +49,7 @@ get_stockeff_raw_data <- function(channelSole, filterByYear = NA,
   for (iyear in head(filterByYear,1):tail(filterByYear,1)) {
     message("Pulling data from year = ",iyear," ...")
     landings.qry <- paste("select year, month, negear, toncl2, nespp3, nespp4, area,
-                           spplivlb, spplndlb, sppvalue, utilcd, MARKET_CODE
+                           spplivlb, spplndlb, sppvalue, utilcd, mesh, MARKET_CODE
                            from stockeff.mv_cf_landings where YEAR = ",iyear)
     if(!is.na(filterByArea[1])){
       landings.qry <- paste0(landings.qry, " and area in (", survdat:::sqltext(filterByArea), ")
@@ -59,13 +59,17 @@ get_stockeff_raw_data <- function(channelSole, filterByYear = NA,
     if (iyear <= 1981) { # Old WOLANDS data.
       # should this be all small mesh?
       comland.yr[, MESH := 5] #Identify all as large mesh
-    }
+    } 
     sql <- c(sql, landings.qry)
     
     #Identify small/large mesh fisheries
     comland.yr[MESH <= 3, MESHCAT := 'SM']
     comland.yr[MESH >  3, MESHCAT := 'LG']
     comland.yr[, MESH := NULL]
+    ## Need to convert this to data.table syntax
+    comland.yr[,TONCL1 := substr(TONCL2,1,1)]
+    comland.yr[,TONCL2 := NULL]
+    
     
     # Use landed weight instead of live weight for shellfish
     if(useLanded) {comland.yr[NESPP3 %in% 743:800, SPPLIVLB := SPPLNDLB]}
@@ -87,16 +91,20 @@ get_stockeff_raw_data <- function(channelSole, filterByYear = NA,
                        MONTH,
                        NEGEAR,
                        MESHCAT,
-                       TONCL2,
+                       TONCL1,
                        NESPP3,
                        AREA,
                        MARKET_CODE,
                        UTILCD)
     
     #landings
-    comland.yr[, V1 := sum(SPPLIVLB, na.rm = T), by = data.table::key(comland.yr)]
+    comland.yr[, V1 := sum(SPPLIVLB, na.rm = T), by = c("YEAR","MONTH","NEGEAR","MESHCAT",
+                                                        "TONCL1","NESPP3","AREA",
+                                                        "MARKET_CODE","UTILCD")]
     #value
-    comland.yr[, V2 := sum(SPPVALUE, na.rm = T), by = data.table::key(comland.yr)]
+    comland.yr[, V2 := sum(SPPVALUE, na.rm = T), by = c("YEAR","MONTH","NEGEAR","MESHCAT",
+                                                        "TONCL1","NESPP3","AREA",
+                                                        "MARKET_CODE","UTILCD")]
     
     #Create market category
     comland.yr[, MKTCAT := substr(NESPP4, 4, 4)]
@@ -111,21 +119,19 @@ get_stockeff_raw_data <- function(channelSole, filterByYear = NA,
     comland <- data.table::rbindlist(list(comland, comland.yr))
     
   }
+
   
-  # #Convert number fields from chr to num
-  # numberCols <- c('YEAR', 'MONTH', 'NEGEAR', 'TONCL1', 'NESPP3', 'UTILCD', 'AREA',
-  #                 'MKTCAT')
-  # comland[, (numberCols):= lapply(.SD, as.numeric), .SDcols = numberCols][]
-  # 
-  # #Adjust pounds to metric tons
-  # comland[, SPPLIVMT := SPPLIVLB * 0.00045359237]
-  # comland[, SPPLIVLB := NULL]
-  # 
-  # #standardize YEAR field
-  # comland[YEAR < 100, YEAR := YEAR + 1900L]
-  # 
-  # #Add Nationality Flag
-  # comland[, US := T]
+  #Convert number fields from chr to num
+  numberCols <- c('YEAR', 'MONTH', 'NEGEAR', 'TONCL1', 'NESPP3', 'UTILCD', 'AREA',
+                  'MKTCAT')
+  comland[, (numberCols):= lapply(.SD, as.numeric), .SDcols = numberCols][]
+
+  #Adjust pounds to metric tons
+  comland[, SPPLIVMT := SPPLIVLB * 0.00045359237]
+  comland[, SPPLIVLB := NULL]
+
+  #Add Nationality Flag
+  comland[, US := T]
   
   return(list(comland = comland[], 
               sql     = sql))
