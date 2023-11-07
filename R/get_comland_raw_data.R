@@ -67,7 +67,7 @@ get_comland_raw_data <- function(channelSole, channelNova, filterByYear = NA,
     #Data query
     #Need to add mesh data post 1981
     if(substr(tables[itab], 1, 3) == 'WOL'){
-      landings.qry <- paste("select year, month, negear, toncl1, nespp3, nespp4, area,
+      landings.qry <- paste("select year, month, negear, toncl2, nespp3, nespp4, area,
                            spplivlb, spplndlb, sppvalue, utilcd
                            from", tables[itab])
       if(!is.na(filterByArea[1])){
@@ -86,7 +86,7 @@ get_comland_raw_data <- function(channelSole, channelNova, filterByYear = NA,
       if(filterByYear[itab] > 1981 & filterByYear[itab] <= 1993){
         trip.table <- paste0('WODETT',  substr(filterByYear[itab], 3, 4))
       }
-      landings.qry <- paste("select a.year, a.month, a.negear, a.toncl1, a.nespp3, 
+      landings.qry <- paste("select a.year, a.month, a.negear, a.toncl2, a.nespp3, 
                            a.nespp4, a.area, a.spplivlb, a.spplndlb, a.sppvalue, 
                            a.utilcd, b.mesh
                            from", tables[itab], "a,", trip.table, "b
@@ -124,20 +124,23 @@ get_comland_raw_data <- function(channelSole, channelNova, filterByYear = NA,
                        MONTH,
                        NEGEAR,
                        MESHCAT,
-                       TONCL1,
+                       TONCL2,
                        NESPP3,
                        AREA,
                        UTILCD)
     #landings
-    comland.yr[, V1 := sum(SPPLIVLB, na.rm = T), by = key(comland.yr)]
+    comland.yr[, V1 := sum(SPPLIVLB, na.rm = T), by = c("YEAR","MONTH","NEGEAR","MESHCAT",
+                                                        "TONCL2","NESPP3","AREA","UTILCD")]
     #value
-    comland.yr[, V2 := sum(SPPVALUE, na.rm = T), by = key(comland.yr)]
+    comland.yr[, V2 := sum(SPPVALUE, na.rm = T), by =c("YEAR","MONTH","NEGEAR","MESHCAT",
+                                                       "TONCL2","NESPP3","AREA","UTILCD")]
     
     #Create market category
     comland.yr[, MKTCAT := substr(NESPP4, 4, 4)]
     
     #Remove extra rows/columns
-    comland.yr <- unique(comland.yr, by = key(comland.yr))
+    comland.yr <- unique(comland.yr, by = c("YEAR","MONTH","NEGEAR","MESHCAT",
+                                            "TONCL2","NESPP3","AREA","UTILCD"))
     comland.yr[, c('SPPLIVLB', 'SPPLNDLB', 'SPPVALUE', 'NESPP4') := NULL]
     
     #Rename summed columns
@@ -150,7 +153,7 @@ get_comland_raw_data <- function(channelSole, channelNova, filterByYear = NA,
   }
   
   #Convert number fields from chr to num
-  numberCols <- c('YEAR', 'MONTH', 'NEGEAR', 'TONCL1', 'NESPP3', 'UTILCD', 'AREA',
+  numberCols <- c('YEAR', 'MONTH', 'NEGEAR', 'TONCL2', 'NESPP3', 'UTILCD', 'AREA',
                   'MKTCAT')
   comland[, (numberCols):= lapply(.SD, as.numeric), .SDcols = numberCols][]
   
