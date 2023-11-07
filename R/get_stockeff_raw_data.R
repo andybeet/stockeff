@@ -67,8 +67,8 @@ get_stockeff_raw_data <- function(channel, filterByYear = NA,
     comland.yr[MESH >  3, MESHCAT := 'LG']
     comland.yr[, MESH := NULL]
     ## Need to convert this to data.table syntax
-    comland.yr[,TONCL1 := substr(TONCL2,1,1)]
-    comland.yr[,TONCL2 := NULL]
+#    comland.yr[,TONCL1 := substr(TONCL2,1,1)]
+#    comland.yr[,TONCL2 := NULL]
     
     
     # Use landed weight instead of live weight for shellfish
@@ -91,7 +91,7 @@ get_stockeff_raw_data <- function(channel, filterByYear = NA,
                        MONTH,
                        NEGEAR,
                        MESHCAT,
-                       TONCL1,
+                       TONCL2,
                        NESPP3,
                        AREA,
                        MARKET_CODE,
@@ -99,11 +99,11 @@ get_stockeff_raw_data <- function(channel, filterByYear = NA,
     
     #landings
     comland.yr[, V1 := sum(SPPLIVLB, na.rm = T), by = c("YEAR","MONTH","NEGEAR","MESHCAT",
-                                                        "TONCL1","NESPP3","AREA",
+                                                        "TONCL2","NESPP3","AREA",
                                                         "MARKET_CODE","UTILCD")]
     #value
     comland.yr[, V2 := sum(SPPVALUE, na.rm = T), by = c("YEAR","MONTH","NEGEAR","MESHCAT",
-                                                        "TONCL1","NESPP3","AREA",
+                                                        "TONCL2","NESPP3","AREA",
                                                         "MARKET_CODE","UTILCD")]
     
     #Create market category
@@ -122,7 +122,7 @@ get_stockeff_raw_data <- function(channel, filterByYear = NA,
 
   
   #Convert number fields from chr to num
-  numberCols <- c('YEAR', 'MONTH', 'NEGEAR', 'TONCL1', 'NESPP3', 'UTILCD', 'AREA',
+  numberCols <- c('YEAR', 'MONTH', 'NEGEAR', 'TONCL2', 'NESPP3', 'UTILCD', 'AREA',
                   'MKTCAT')
   comland[, (numberCols):= lapply(.SD, as.numeric), .SDcols = numberCols][]
 
